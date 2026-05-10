@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Mylo Speech Buddy",
+    "slug": "mylo-speech-buddy",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "mylo",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ph.mylo.speechbuddy"
+    },
+    "android": {
+      "package": "ph.mylo.speechbuddy",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": false,
+          "supportsPictureInPicture": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}
