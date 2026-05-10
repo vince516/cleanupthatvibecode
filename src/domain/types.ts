@@ -1,3 +1,24 @@
+export type Role = 'parent' | 'slp' | 'admin';
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName?: string;
+  role: Role;
+  createdAt: number;
+}
+
+export interface ChildProfile {
+  id: string;
+  parentUid: string;
+  slpUid?: string;
+  name: string;
+  dob?: string;
+  primaryLanguage: 'filipino' | 'english' | 'both';
+  currentCourseId?: string;
+  createdAt: number;
+}
+
 export type Discipline =
   | 'speech'
   | 'occupational'

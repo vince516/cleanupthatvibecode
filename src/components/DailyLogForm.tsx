@@ -3,11 +3,10 @@ import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, Alert } from 
 import { colors, radius, space } from '@/theme/colors';
 import type { Exercise, TargetAttempt, AttemptResult, SessionLog } from '@/domain/types';
 import { saveSessionLog } from '@/firebase/logs';
-import { auth } from '@/firebase/config';
+import { useAuth } from '@/state/auth';
 
 interface Props {
   exercise: Exercise;
-  childId: string;
   onSaved?: (logId: string) => void;
 }
 
@@ -17,7 +16,10 @@ const RESULTS: { key: AttemptResult; label: string; tone: string }[] = [
   { key: 'no', label: 'No', tone: colors.danger },
 ];
 
-export function DailyLogForm({ exercise, childId, onSaved }: Props) {
+export function DailyLogForm({ exercise, onSaved }: Props) {
+  const user = useAuth((s) => s.user);
+  const activeChildId = useAuth((s) => s.activeChildId);
+  const profile = useAuth((s) => s.profile);
   const [language, setLanguage] = useState<'filipino' | 'english'>('filipino');
   const [attempts, setAttempts] = useState<Record<string, TargetAttempt>>(() =>
     Object.fromEntries(
@@ -38,16 +40,24 @@ export function DailyLogForm({ exercise, childId, onSaved }: Props) {
   };
 
   const save = async () => {
-    const uid = auth.currentUser?.uid;
-    if (!uid) {
-      Alert.alert('Not signed in', 'Sign in to save logs to your child\'s record.');
+    if (!user) {
+      Alert.alert('Not signed in', 'Sign in to save logs.');
+      return;
+    }
+    if (!activeChildId) {
+      Alert.alert(
+        'No child selected',
+        profile?.role === 'slp'
+          ? 'Pick a child from your caseload first.'
+          : 'Add a child profile in You → Children before saving a log.',
+      );
       return;
     }
     setSaving(true);
     try {
       const log: Omit<SessionLog, 'id' | 'createdAt'> = {
-        userId: uid,
-        childId,
+        userId: user.uid,
+        childId: activeChildId,
         exerciseId: exercise.id,
         courseId: exercise.courseId,
         date: new Date().toISOString(),

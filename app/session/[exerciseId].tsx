@@ -23,8 +23,6 @@ export default function SessionScreen() {
     );
   }
 
-  const childId = 'demo-child';
-
   return (
     <>
       <Stack.Screen options={{ title: exercise.title }} />
@@ -73,7 +71,6 @@ export default function SessionScreen() {
           <View style={styles.logWrap}>
             <DailyLogForm
               exercise={exercise}
-              childId={childId}
               onSaved={() => router.back()}
             />
           </View>
