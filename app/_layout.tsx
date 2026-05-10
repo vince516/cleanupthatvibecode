@@ -9,6 +9,8 @@ import { useAuth, useAuthListener } from '@/state/auth';
 
 import '@/firebase/config';
 
+const PUBLIC_ROUTES = new Set(['privacy']);
+
 function useAuthGate() {
   const router = useRouter();
   const segments = useSegments();
@@ -17,8 +19,10 @@ function useAuthGate() {
 
   useEffect(() => {
     if (!initialized) return;
-    const inAuth = segments[0] === '(auth)';
-    if (!user && !inAuth) {
+    const first = segments[0] ?? '';
+    const inAuth = first === '(auth)';
+    const isPublic = PUBLIC_ROUTES.has(first);
+    if (!user && !inAuth && !isPublic) {
       router.replace('/sign-in');
     } else if (user && inAuth) {
       router.replace('/');
@@ -49,6 +53,8 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="index" options={{ title: 'Home' }} />
             <Stack.Screen name="you" options={{ title: 'You' }} />
+            <Stack.Screen name="data" options={{ title: 'Privacy & data' }} />
+            <Stack.Screen name="privacy" options={{ title: 'Privacy policy' }} />
             <Stack.Screen name="category/[categoryId]" options={{ title: '' }} />
             <Stack.Screen name="course/[courseId]" options={{ title: '' }} />
             <Stack.Screen

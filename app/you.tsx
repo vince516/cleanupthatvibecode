@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, View, Text, StyleSheet, Pressable, TextInput, Alert } from 'react-native';
+import { Link } from 'expo-router';
 import { useAuth } from '@/state/auth';
 import { signOut } from '@/firebase/auth';
 import { createChild } from '@/firebase/children';
@@ -93,6 +94,13 @@ export default function YouScreen() {
         </View>
       )}
 
+      <Link href="/data" asChild>
+        <Pressable style={styles.linkRow}>
+          <Text style={styles.linkText}>Privacy & data</Text>
+          <Text style={styles.linkChevron}>→</Text>
+        </Pressable>
+      </Link>
+
       <Pressable onPress={() => signOut()} style={styles.signOut}>
         <Text style={styles.signOutText}>Sign out</Text>
       </Pressable>
@@ -139,6 +147,16 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   addBtnText: { color: colors.text, fontWeight: '800' },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    padding: space(4),
+  },
+  linkText: { color: colors.text, fontWeight: '700' },
+  linkChevron: { color: colors.primary, fontSize: 18 },
   signOut: {
     marginTop: space(2),
     padding: space(3),

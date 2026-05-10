@@ -86,6 +86,10 @@ export default function SignInScreen() {
               Create an account
             </Link>
           </View>
+
+          <Link href="/privacy" style={styles.policyLink}>
+            Privacy policy
+          </Link>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -119,4 +123,5 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: space(3) },
   footerText: { color: colors.textMuted },
   footerLink: { color: colors.primary, fontWeight: '700' },
+  policyLink: { color: colors.textMuted, textAlign: 'center', marginTop: space(2), fontSize: 13 },
 });

@@ -8,7 +8,7 @@ import { auth } from './config';
 import { createUserProfile } from './users';
 import { createChild } from './children';
 import { useAuth } from '@/state/auth';
-import type { Role } from '@/domain/types';
+import type { Consent, Role } from '@/domain/types';
 
 export async function signIn(email: string, password: string): Promise<void> {
   await signInWithEmailAndPassword(auth, email, password);
@@ -20,6 +20,7 @@ export async function signUp(args: {
   role: Role;
   displayName?: string;
   childName?: string;
+  consent: Consent;
 }): Promise<void> {
   const cred = await createUserWithEmailAndPassword(auth, args.email, args.password);
   if (args.displayName) {
@@ -30,6 +31,7 @@ export async function signUp(args: {
     email: args.email,
     role: args.role,
     displayName: args.displayName,
+    consent: args.consent,
   });
   if (args.role === 'parent' && args.childName) {
     await createChild({

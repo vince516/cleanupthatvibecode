@@ -1,10 +1,20 @@
 export type Role = 'parent' | 'slp' | 'admin';
 
+export interface Consent {
+  policyVersion: string;
+  acceptedAt: number;
+  privacyPolicy: boolean;
+  parentalConsent: boolean;
+  marketingEmail: boolean;
+  analytics: boolean;
+}
+
 export interface UserProfile {
   uid: string;
   email: string;
   displayName?: string;
   role: Role;
+  consent: Consent;
   createdAt: number;
 }
 
