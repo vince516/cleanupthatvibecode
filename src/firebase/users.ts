@@ -53,7 +53,7 @@ export async function updateConsent(
   uid: string,
   patch: Partial<Pick<Consent, 'marketingEmail' | 'analytics'>>,
 ): Promise<void> {
-  const updates: Record<string, unknown> = {};
+  const updates: Record<string, boolean> = {};
   if (patch.marketingEmail !== undefined) {
     updates['consent.marketingEmail'] = patch.marketingEmail;
   }

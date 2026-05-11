@@ -55,6 +55,8 @@ export default function RootLayout() {
             <Stack.Screen name="you" options={{ title: 'You' }} />
             <Stack.Screen name="data" options={{ title: 'Privacy & data' }} />
             <Stack.Screen name="privacy" options={{ title: 'Privacy policy' }} />
+            <Stack.Screen name="progress" options={{ title: 'Recent sessions' }} />
+            <Stack.Screen name="invite/[childId]" options={{ title: '' }} />
             <Stack.Screen name="category/[categoryId]" options={{ title: '' }} />
             <Stack.Screen name="course/[courseId]" options={{ title: '' }} />
             <Stack.Screen

@@ -70,9 +70,19 @@ service cloud.firestore {
     match /children/{childId} {
       allow create: if request.auth != null
         && request.resource.data.parentUid == request.auth.uid;
-      allow read, update: if request.auth != null
+      allow read: if request.auth != null
         && (resource.data.parentUid == request.auth.uid
             || resource.data.slpUid == request.auth.uid);
+      allow update: if request.auth != null
+        && (
+          resource.data.parentUid == request.auth.uid
+          || resource.data.slpUid == request.auth.uid
+          // SLP claim via invite redemption: only when no SLP is set
+          // and the only change is to set slpUid to the caller
+          || (resource.data.get('slpUid', null) == null
+              && request.resource.data.slpUid == request.auth.uid
+              && request.resource.data.parentUid == resource.data.parentUid)
+        );
       allow delete: if request.auth != null
         && resource.data.parentUid == request.auth.uid;
     }
@@ -81,11 +91,28 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid;
       allow read:   if request.auth != null
-        && resource.data.userId == request.auth.uid;
+        && (resource.data.userId == request.auth.uid
+            || get(/databases/$(database)/documents/children/$(resource.data.childId)).data.slpUid == request.auth.uid);
       allow delete: if request.auth != null
         && resource.data.userId == request.auth.uid;
-      // SLP read of child's logs requires looking up the child doc — add
-      // a custom claim or denormalize slpUid onto the log to keep this rule cheap.
+    }
+
+    match /invites/{code} {
+      // Parents can create invites for children they own
+      allow create: if request.auth != null
+        && request.resource.data.parentUid == request.auth.uid;
+      // Parents read/update/delete their own invites; signed-in users can read
+      // a specific code (by document ID) to redeem it — codes are non-guessable
+      allow read:   if request.auth != null;
+      allow update: if request.auth != null
+        && (resource.data.parentUid == request.auth.uid
+            // SLP redeeming: can only flip status to 'redeemed' and stamp redeemedBy
+            || (request.resource.data.parentUid == resource.data.parentUid
+                && request.resource.data.childId == resource.data.childId
+                && request.resource.data.status == 'redeemed'
+                && request.resource.data.redeemedBy == request.auth.uid));
+      allow delete: if request.auth != null
+        && resource.data.parentUid == request.auth.uid;
     }
   }
 }
@@ -133,7 +160,9 @@ When you publish a material change to `src/legal/privacy.ts`, bump `PRIVACY_POLI
 - Course → learning goal, pedagogy principle, prompt hierarchy, exercise list
 - Session screen with the 4-phase timer; video phase reveals the player; log phase reveals the daily log form
 - Daily log writes to Firestore against the active child + signed-in user
-- You screen: role display, child picker, add sibling, link to Privacy & data, sign out
+- Parent ↔ SLP linking: parent generates one-time 8-char invite codes per child (7-day TTL), shares via native sheet, can revoke; SLP redeems on /you, child appears in caseload
+- Recent sessions screen: per-child summary (sessions, attempts, spontaneous %) and individual logs
+- You screen: role display, child picker, add sibling, invite SLP, link to Recent sessions and Privacy & data, sign out
 - Privacy & data screen: read policy, toggle analytics/marketing, export JSON, delete account with password reauth + cascading Firestore delete
 
 ## What's next (not in this MVP)
@@ -158,13 +187,15 @@ app/                       Expo Router screens
   data.tsx                 Privacy & data: consent toggles, export JSON, delete account
   privacy.tsx              Versioned privacy policy (public)
   (auth)/                  Public sign-in / sign-up with consent capture
+  progress.tsx             Recent sessions for the active child + spontaneous % stat
+  invite/[childId].tsx     Parent: generate, share, revoke SLP invite codes
   category/[categoryId].tsx
   course/[courseId].tsx
   session/[exerciseId].tsx Modal with SessionTimer + VideoPlayer + DailyLogForm
 src/
   components/              Pedagogy + UI primitives (SessionTimer, WaitTimer, Checkbox, etc.)
   domain/                  Types + local seed (categories, courses, exercises)
-  firebase/                config, auth, users, children, logs, account (Firestore wrappers)
+  firebase/                config, auth, users, children, invites, logs, account (Firestore wrappers)
   legal/                   Versioned privacy policy text
   state/                   Zustand auth store (user, profile, children, activeChildId)
   theme/                   Colors and spacing

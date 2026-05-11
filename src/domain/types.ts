@@ -29,6 +29,20 @@ export interface ChildProfile {
   createdAt: number;
 }
 
+export type InviteStatus = 'pending' | 'redeemed' | 'revoked' | 'expired';
+
+export interface Invite {
+  code: string;
+  parentUid: string;
+  childId: string;
+  childName: string;
+  status: InviteStatus;
+  createdAt: number;
+  expiresAt: number;
+  redeemedBy?: string;
+  redeemedAt?: number;
+}
+
 export type Discipline =
   | 'speech'
   | 'occupational'

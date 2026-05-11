@@ -4,12 +4,15 @@ import { Link } from 'expo-router';
 import { useAuth } from '@/state/auth';
 import { signOut } from '@/firebase/auth';
 import { createChild } from '@/firebase/children';
+import { parseCode, redeemInvite } from '@/firebase/invites';
 import { colors, radius, space } from '@/theme/colors';
 
 export default function YouScreen() {
   const { user, profile, children, activeChildId, setActiveChildId, refreshChildren } = useAuth();
   const [newChild, setNewChild] = useState('');
+  const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [redeeming, setRedeeming] = useState(false);
 
   if (!user || !profile) return null;
 
@@ -33,6 +36,26 @@ export default function YouScreen() {
     }
   };
 
+  const redeem = async () => {
+    const c = parseCode(code);
+    if (c.length < 6) {
+      Alert.alert('Invalid code', 'Codes are 8 characters long.');
+      return;
+    }
+    setRedeeming(true);
+    try {
+      const res = await redeemInvite(c);
+      setCode('');
+      await refreshChildren();
+      setActiveChildId(res.childId);
+      Alert.alert('Added', `${res.childName} is now in your caseload.`);
+    } catch (err) {
+      Alert.alert('Could not redeem', String((err as Error).message));
+    } finally {
+      setRedeeming(false);
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.wrap}>
       <View style={styles.card}>
@@ -48,14 +71,25 @@ export default function YouScreen() {
             <Text style={styles.muted}>No child profiles yet.</Text>
           ) : (
             children.map((c) => (
-              <Pressable
-                key={c.id}
-                onPress={() => setActiveChildId(c.id)}
-                style={[styles.row, activeChildId === c.id && styles.rowActive]}
-              >
-                <Text style={styles.rowText}>{c.name}</Text>
-                {activeChildId === c.id && <Text style={styles.activeTag}>active</Text>}
-              </Pressable>
+              <View key={c.id} style={styles.childRow}>
+                <Pressable
+                  onPress={() => setActiveChildId(c.id)}
+                  style={[styles.row, { flex: 1 }, activeChildId === c.id && styles.rowActive]}
+                >
+                  <Text style={styles.rowText}>{c.name}</Text>
+                  {activeChildId === c.id && <Text style={styles.activeTag}>active</Text>}
+                </Pressable>
+                <Link
+                  href={{ pathname: '/invite/[childId]', params: { childId: c.id } }}
+                  asChild
+                >
+                  <Pressable style={styles.inviteBtn}>
+                    <Text style={styles.inviteBtnText}>
+                      {c.slpUid ? 'Linked SLP' : 'Invite SLP'}
+                    </Text>
+                  </Pressable>
+                </Link>
+              </View>
             ))
           )}
           <View style={styles.addRow}>
@@ -78,21 +112,60 @@ export default function YouScreen() {
       )}
 
       {profile.role === 'slp' && (
-        <View style={styles.card}>
-          <Text style={styles.label}>Caseload</Text>
-          {children.length === 0 ? (
+        <>
+          <View style={styles.card}>
+            <Text style={styles.label}>Add a child by code</Text>
             <Text style={styles.muted}>
-              No children assigned yet. Children appear here once a parent links you to their account.
+              Ask the parent to generate an invite from their Mylo app.
             </Text>
-          ) : (
-            children.map((c) => (
-              <View key={c.id} style={styles.row}>
-                <Text style={styles.rowText}>{c.name}</Text>
-              </View>
-            ))
-          )}
-        </View>
+            <View style={styles.addRow}>
+              <TextInput
+                value={code}
+                onChangeText={setCode}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                placeholder="ABCD-EFGH"
+                placeholderTextColor={colors.textMuted}
+                style={[styles.input, { letterSpacing: 2 }]}
+              />
+              <Pressable
+                onPress={redeem}
+                disabled={redeeming || !code.trim()}
+                style={[styles.addBtn, (redeeming || !code.trim()) && { opacity: 0.5 }]}
+              >
+                <Text style={styles.addBtnText}>{redeeming ? '…' : 'Redeem'}</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.label}>Caseload</Text>
+            {children.length === 0 ? (
+              <Text style={styles.muted}>
+                No children assigned yet. Enter an invite code above.
+              </Text>
+            ) : (
+              children.map((c) => (
+                <Pressable
+                  key={c.id}
+                  onPress={() => setActiveChildId(c.id)}
+                  style={[styles.row, activeChildId === c.id && styles.rowActive]}
+                >
+                  <Text style={styles.rowText}>{c.name}</Text>
+                  {activeChildId === c.id && <Text style={styles.activeTag}>active</Text>}
+                </Pressable>
+              ))
+            )}
+          </View>
+        </>
       )}
+
+      <Link href="/progress" asChild>
+        <Pressable style={styles.linkRow}>
+          <Text style={styles.linkText}>Recent sessions</Text>
+          <Text style={styles.linkChevron}>→</Text>
+        </Pressable>
+      </Link>
 
       <Link href="/data" asChild>
         <Pressable style={styles.linkRow}>
@@ -120,6 +193,7 @@ const styles = StyleSheet.create({
   value: { color: colors.text, fontSize: 18, fontWeight: '700' },
   role: { color: colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   muted: { color: colors.textMuted, fontSize: 14 },
+  childRow: { flexDirection: 'row', gap: space(2), alignItems: 'center' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -132,6 +206,13 @@ const styles = StyleSheet.create({
   rowActive: { borderWidth: 1, borderColor: colors.primary },
   rowText: { color: colors.text, fontWeight: '600' },
   activeTag: { color: colors.primary, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  inviteBtn: {
+    paddingHorizontal: space(3),
+    paddingVertical: space(2),
+    backgroundColor: colors.bgElevated,
+    borderRadius: radius.md,
+  },
+  inviteBtnText: { color: colors.primary, fontWeight: '700', fontSize: 12 },
   addRow: { flexDirection: 'row', gap: space(2), marginTop: space(2) },
   input: {
     flex: 1,
